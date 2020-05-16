@@ -8,6 +8,7 @@
 %william         2016-04-13  1.0   Creation
 %william         2016-04-21  1.1   Moved INTERVALS to Battery class
 %                                  Added Constants for Low Grid Use 
+%william                           
 %======================================================================
 
 classdef my

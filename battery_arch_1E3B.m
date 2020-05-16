@@ -1,6 +1,6 @@
-%Filename:     battery_arch_two.m
-%Description:  Observe 2 batteries charging and discharging in a swapping
-%              station at random intervals including pricing.
+%Filename:     1E3B.m
+%Description:  1 Electric Vehicle, 3 Batteries; add waiting time till 
+%              full charge of batteries 
 %
 %Modification History: 
 %======================================================================
@@ -8,6 +8,7 @@
 %======================================================================
 %william         2016-05-19  1.0   Creation
 %william         2016-xx-xx  1.1   Added Customer pay() method
+%                                  
 %======================================================================
 
 % %Clear Values 
@@ -37,7 +38,7 @@ s_mx(my.OBSERVATION_YEARS*my.DAYS_IN_A_YEAR*my.HOURS_IN_A_DAY).id = 0;
 rng(myseed);
 
 %generating Battery properties for all
-batt_number = 2; 
+batt_number = 3; 
 batt(batt_number) = Battery;
 for b_id = 1:batt_number
     batt(b_id) = Battery; 
@@ -140,12 +141,16 @@ for day=1:my.OBSERVATION_YEARS*my.DAYS_IN_A_YEAR
                 end           
             end
 
+            
+            %----------------------------------------------------------
             if (   (batt(cust(v_id).ba).can_recharge == true)                                 ...
                 && (batt(cust(v_id).ba).hours_to_charge == hour)                              ...
                 && (batt(cust(v_id).ba).abs_day_to_charge == day) )
 
                 %Assumption: Charging full has about 3 times chance than 
                 %   charging partially.
+                
+                
                 if (randperm(4,1) == 1) 
                     batt(cust(v_id).ba).charge(charge_type.SOC_FULL_CHARGE);
                 else
@@ -160,10 +165,43 @@ for day=1:my.OBSERVATION_YEARS*my.DAYS_IN_A_YEAR
                 
                 %swap the batteries 
                 % add computation when battery is ready for swapping 
+                
+                list_of_ready_battery_in_station = list_of_battery_in_station; 
+                
+                
+                
+                for stock_battery = 1:numel(list_of_battery_in_station)
+                    temp_batt_id = list_of_battery_in_station(stock_battery); 
+                    if ( batt(temp_batt_id).day_for_grid_ready > day)
+                        list_of_ready_battery_in_station(stock_battery) = 0;
+                    elseif ( batt(temp_batt_id).day_for_grid_ready == day )
+                        if ( batt(temp_batt_id).hour_for_grid_ready > hour)
+                            list_of_ready_battery_in_station(stock_battery) = 0; 
+                        end
+                    end
+                end
+                
+                %if (numel(list_of_battery_in_station) == 3)
+                    disp('stock battery'); 
+                    disp(['cust(v_id).ba ' num2str(cust(v_id).ba)]);
+                    disp(['hour ' num2str(hour)]); 
+                    disp(['day ' num2str(day)]); 
+                    disp(list_of_battery_in_station);
+                    disp(list_of_ready_battery_in_station);
+                    list_of_ready_battery_in_station (list_of_ready_battery_in_station == 0) = [];
+                    disp(list_of_ready_battery_in_station);
+                %end
+                
+                
                 temp_swap = cust(v_id).ba; 
+                
+                
+                
+                
                 cust(v_id).ba = list_of_battery_in_station(1); 
                 list_of_battery_in_ev(list_of_battery_in_ev == list_of_battery_in_station(1)) = temp_swap;
                 list_of_battery_in_station(1) = temp_swap; 
+                list_of_battery_in_station = circshift(list_of_battery_in_station, [0,length(list_of_battery_in_station)-1 ]); 
                 %list_of_battery_in_ev
                 
                 cust(v_id).pay(batt(cust(v_id).ba).profit_customer, ...
@@ -204,22 +242,31 @@ for day=1:my.OBSERVATION_YEARS*my.DAYS_IN_A_YEAR
          s_mx(mx_no).discount_counter_1        = batt(1).discount_counter;
          s_mx(mx_no).low_int_counter_1         = batt(1).low_int_counter; 
          s_mx(mx_no).high_int_counter_1        = batt(1).high_int_counter;         
-         
+        s_mx(mx_no).times_battery_charged_1   = batt(1).times_battery_charged;
+        
           s_mx(mx_no).discount_counter_2        = batt(2).discount_counter;
          s_mx(mx_no).low_int_counter_2         = batt(2).low_int_counter; 
          s_mx(mx_no).high_int_counter_2        = batt(2).high_int_counter;    
+        s_mx(mx_no).times_battery_charged_2   = batt(2).times_battery_charged;
+        
+          s_mx(mx_no).discount_counter_3        = batt(3).discount_counter;
+         s_mx(mx_no).low_int_counter_3         = batt(3).low_int_counter; 
+         s_mx(mx_no).high_int_counter_3        = batt(3).high_int_counter;          
+        s_mx(mx_no).times_battery_charged_3   = batt(3).times_battery_charged;         
+         
          s_mx(mx_no).cut_disc               = cust(v_id).discount_counter; 
          s_mx(mx_no).cut_hi               = cust(v_id).high_int_counter; 
          s_mx(mx_no).cut_lo               = cust(v_id).low_int_counter; 
          s_mx(mx_no).cust_x_charged        = cust(v_id).times_battery_charged;
          
-        s_mx(mx_no).times_battery_charged   = batt(cust(v_id).ba).times_battery_charged;
-        s_mx(mx_no).tracking_dist_no_add    = batt(cust(v_id).ba).tracking_dist_no_add;
-        s_mx(mx_no).times_battery_charged_1   = batt(1).times_battery_charged;
-        s_mx(mx_no).tracking_dist_no_add_1    = batt(1).tracking_dist_no_add;
-        s_mx(mx_no).times_battery_charged_2   = batt(2).times_battery_charged;
-        s_mx(mx_no).tracking_dist_no_add_2    = batt(2).tracking_dist_no_add;
-        
+
+%         s_mx(mx_no).times_battery_charged   = batt(cust(v_id).ba).times_battery_charged;
+%         s_mx(mx_no).tracking_dist_no_add    = batt(cust(v_id).ba).tracking_dist_no_add;
+%         s_mx(mx_no).times_battery_charged_1   = batt(1).times_battery_charged;
+%         s_mx(mx_no).tracking_dist_no_add_1    = batt(1).tracking_dist_no_add;
+%         s_mx(mx_no).times_battery_charged_2   = batt(2).times_battery_charged;
+%         s_mx(mx_no).tracking_dist_no_add_2    = batt(2).tracking_dist_no_add;
+%         
         
         
         
