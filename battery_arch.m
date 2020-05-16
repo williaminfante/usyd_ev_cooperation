@@ -10,7 +10,8 @@
 %william         2016-04-21  1.1   Placed Battery-related commands 
 %                                  to Battery.m
 %                                  Rename to battery_arch.m
-%                2016-04-28  1.2   Added FileName in struct for Excel
+%william         2016-04-26  1.2   Added FileName in struct for Excel
+%william         2016-04-30  1.3   Added tracking_dist_no_add
 %======================================================================
 
 % %Clear Values 
@@ -100,6 +101,7 @@ for day=1:my.OBSERVATION_YEARS*my.DAYS_IN_A_YEAR
         %s_mx(mx_no).hour_for_grid_ready     = b.hour_for_grid_ready;
         s_mx(mx_no).discount_fee_undrained  = b.discount_fee_undrained;
         s_mx(mx_no).customer_used_hours     = b.customer_used_hours;
+        s_mx(mx_no).tracking_dist           = b.tracking_dist;        
         %s_mx(mx_no).profit_lease_fee        = b.profit_lease_fee;
         %s_mx(mx_no).profit_swap_fee         = b.profit_swap_fee;
         %s_mx(mx_no).profit_customer         = b.profit_customer;
@@ -109,6 +111,8 @@ for day=1:my.OBSERVATION_YEARS*my.DAYS_IN_A_YEAR
         s_mx(mx_no).low_int_counter         = b.low_int_counter; 
         s_mx(mx_no).high_int_counter        = b.high_int_counter;         
         s_mx(mx_no).times_battery_charged   = b.times_battery_charged;
+        s_mx(mx_no).tracking_dist_no_add    = b.tracking_dist_no_add;
+
     end
 end
 
@@ -135,7 +139,7 @@ FileName=sprintf('%s_batt_pk_%s_ld_%s_%s_sd_%d.xlsx',            ...
         datestr(now, 'yymmdd_HHMM'), peak_name, load, ...
         customer_name, myseed);
 
-f_mx.filename                       = Filename;
+f_mx.filename                       = FileName;
 f_mx.is_double_peak                 = b.is_double_peak;
 f_mx.is_cooperative                 = b.is_cooperative;
 f_mx.myseed                         = myseed;

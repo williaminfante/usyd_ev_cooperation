@@ -24,7 +24,7 @@ classdef my
         
         HOUR_DISCOUNTED_COOPERATIVE     = 1;        %hour 
         COOPERATIVE_TIME                = 3;        
-        OBSERVATION_YEARS               = 7;
+        OBSERVATION_YEARS               = 1;
             %assumption: customer willing delay charging for discount
         
         MAX_HR_RETURN_BATT              = 72;    

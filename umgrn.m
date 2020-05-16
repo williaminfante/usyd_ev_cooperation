@@ -24,6 +24,7 @@ function [X,gmix] = UMGRN(mus,vars,N,varargin)
 % Author: Avan Suinesiaputra (avan.sp@gmail.com)
 %         Fadillah Tala (fadil.tala@gmail.com)
 % William - modified restrictions to values for project 
+%           commented plot for random numbers in graph 
 
 % default values
 lim = [];
@@ -95,7 +96,8 @@ for i=1:N
 end
 
 %William 
-X(X<7) = 31;
+%X(X<7) = 31;
+X(X<1) = 31;
 X(X>71) = 41;
 
 %William 
@@ -110,5 +112,5 @@ if( with_plot )
 	for i=1:length(mus) Gx(i,:) = g(xi,mus(i),vars(i)); end
 	plot(xi,Gx','LineStyle',':');
 	plot(xi,gmix(xi),'b');
-	plot(X,zeros(size(X)),'b.');
+	%plot(X,zeros(size(X)),'b.');  %2016-04-26
 end

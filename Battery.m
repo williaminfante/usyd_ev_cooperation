@@ -13,8 +13,11 @@
 %                                   random sampling
 %                                  Moved the value of LIGHT_INTERVAL
 %                                   and HEAVY_INTERVAL
-%william         2016-04-22   1.2  Updated the EV Customer Visit 
+%william         2016-04-26   1.2  Updated the EV Customer Visit 
 %                                   to station formula x
+%                                  Added tracking_dist
+%william         2016-04-30   1.3  Updated tracking_dist to include 
+%                                   additional hour for cooperative
 %======================================================================
 
 classdef Battery < handle
@@ -52,11 +55,12 @@ classdef Battery < handle
         
         heavy_interval          = [6 7 8 17 18 19];
         light_interval          = [0 1 2 23]; 
+
         %Flags
-        can_discharge           = true;
-        can_recharge            = false;
-        is_cooperative          = false;
-        is_double_peak          = false; 
+        can_discharge           = true;   %move to customer
+        can_recharge            = false;  %move to customer
+        is_cooperative          = false;  %move to customer 
+        is_double_peak          = false;  %move to customer 
         %Counters
         times_battery_charged   = 0; 
         cumulative_cycles       = 0;
@@ -66,6 +70,8 @@ classdef Battery < handle
         preferred_high_f        = 0;
         high_int_counter        = 0;
         low_int_counter         = 0;
+        tracking_dist           = 0;
+        tracking_dist_no_add    = 0;
         
         %Money 
         profit_customer         = 0; 
@@ -149,7 +155,9 @@ classdef Battery < handle
                 % [Strickland,        2014#134] day 1 = 100% SoH
                 %   18 years = 80 % (linear approximation) 
                 %   y = -0.003x + 100;
-                cal_fade = -0.003*(time_in_days) + 100; 
+                % cal_fade = -0.003*(time_in_days) + 100; 
+                % (1/2 power approximation) 
+                 cal_fade = 100 - 0.247*(time_in_days^(0.5));
             end 
             
             % [Strickland,        2014#134] 70-80%, 80% conservative 
@@ -313,8 +321,12 @@ classdef Battery < handle
                     x = my.AVE_HR_RETURN_BATT;
                 end
             else
-               x = round(umgrn([17 31 41 55 65],[4 3 3 4 4],1,          ...
-                   'with_plot', 0));
+               %obj.tracking_dist = round(umgrn([17 31 41 55 65],...
+               %    [4 3 3 4 4], 1, 'with_plot', 0));
+               obj.tracking_dist = round(umgrn([7 17 31 41 55 65],...
+                   [3.75 3.5 2.75 2.75 3.5 3.75], 1, 'with_plot', 0));              
+               obj.tracking_dist_no_add = obj.tracking_dist;
+               x    = obj.tracking_dist + my.HOURS_IN_A_DAY - obj.hour_day_current;              
             end
             
             
@@ -359,6 +371,8 @@ classdef Battery < handle
                 
                 if (preferred_diff <= my.COOPERATIVE_TIME)
                     obj.customer_used_hours = obj.customer_used_hours   ...
+                        + preferred_diff;
+                    obj.tracking_dist = obj.tracking_dist               ...
                         + preferred_diff;
                     obj.hours_to_charge                                 ...
                     = mod(obj.hour_day_current + obj.customer_used_hours...
