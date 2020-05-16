@@ -1,15 +1,12 @@
+%Filename:     clear_values.m
+%Description:  Generates Battery class
+%
 %Modification History: 
 %======================================================================
 %Author          Date        Ver   Remarks  
 %======================================================================
-%william         2016-04-04  1.0   Creation
+%william         2016-04-21  1.0   Creation
 %======================================================================
 
-classdef class_type 
-    enumeration 
-        CLASS_A 
-        CLASS_B 
-        CLASS_C 
-        CLASS_D 
-    end
-end 
+clc
+clear

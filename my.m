@@ -5,7 +5,9 @@
 %======================================================================
 %Author          Date        Ver   Remarks  
 %======================================================================
-%william         2016-04-14  1.0   Creation
+%william         2016-04-13  1.0   Creation
+%william         2016-04-21  1.1   Moved INTERVALS to Battery class
+%                                  Added Constants for Low Grid Use 
 %======================================================================
 
 classdef my
@@ -17,12 +19,18 @@ classdef my
         CHARGING_TIME                   = 4;        %hour; need ref  
         HOURS_IN_A_DAY                  = 24;
         DAYS_IN_A_YEAR                  = 365;
-        HEAVY_INTERVAL                  = [6 7 8 17 18 19]; %need ref
+        %HEAVY_INTERVAL                  = [6 7 8 17 18 19]; %need ref
+        %LIGHT_INTERVAL                  = [0 1 2 23];    
+        
         HOUR_DISCOUNTED_COOPERATIVE     = 1;        %hour 
         COOPERATIVE_TIME                = 3;        
         OBSERVATION_YEARS               = 7;
             %assumption: customer willing delay charging for discount
         
+        MAX_HR_RETURN_BATT              = 72;    
+        AVE_HR_RETURN_BATT              = 48; 
+        MIN_HR_RETURN_BATT              = 24; 
+        HR_BEFORE_LOW_GRID_USE          = 1;               
         %Capacity 
         MIN_CAPACITY_FOR_GRID           = 1000;     %kWH;                     
             %assumption - 1MW minimum to participate in grid services 
@@ -61,6 +69,7 @@ classdef my
             %assumption: theoretical max from empty to full (Tesla)
             %conservative: instead of 20, use 25
     end    
+    
     methods
     end    
 end

@@ -1,11 +1,11 @@
-%Filename:     charge_type.m
+%Filename:     Battery.m
 %Description:  List of types of battery charging
 %
 %Modification History: 
 %======================================================================
 %Author          Date        Ver   Remarks  
 %======================================================================
-%william         2016-04-14  1.0   Creation
+%william         2016-04-13  1.0   Creation
 %======================================================================
 
 classdef charge_type < uint32

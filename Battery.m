@@ -5,7 +5,14 @@
 %======================================================================
 %Author          Date        Ver   Remarks  
 %======================================================================
-%william         2016-04-14  1.0   Creation
+%william         2016-04-13  1.0   Creation
+%william         2016-04-21  1.1   Trasnferred Battery-related 
+%                                  commands from BatteryInTime.m
+%                                  Added intervals for light-charge
+%                                  Modified Customer return battery
+%                                   random sampling
+%                                  Moved the value of LIGHT_INTERVAL
+%                                   and HEAVY_INTERVAL
 %======================================================================
 
 classdef Battery < handle
@@ -41,24 +48,32 @@ classdef Battery < handle
         hour_for_grid_ready     = 0;
         day_for_grid_ready      = 0;
         
+        heavy_interval          = [6 7 8 17 18 19];
+        light_interval          = [0 1 2 23]; 
         %Flags
         can_discharge           = true;
         can_recharge            = false;
         is_cooperative          = false;
-        
+        is_double_peak          = false; 
         %Counters
         times_battery_charged   = 0; 
         cumulative_cycles       = 0;
         second_cycle_counter    = 0;   
         discount_counter        = 0;
+        preferred_low_f         = 0;
+        preferred_high_f        = 0;
+        high_int_counter        = 0;
+        low_int_counter         = 0;
         
         %Money 
         profit_customer         = 0; 
         profit_lease_fee        = 0;
         profit_swap_fee         = 0;
-        discount_fee_undrained  = 0; 
+        discount_fee_undrained  = 0;
+        discount_fee_drained    = 0;
         total_profit_customer   = 0; 
         total_electricity_cost  = 0; 
+        
     end
     properties (Dependent)
         %Time
@@ -157,20 +172,57 @@ classdef Battery < handle
             g = @calendar_fade; 
             calendar_soh = g(obj.days_battery_used);
             %disp(calendar_soh);
-            real_soh = min(calendar_soh, cycle_soh) ...
+            real_soh = min(calendar_soh, cycle_soh)                     ...
                 - 0.5*(100 - max(calendar_soh, cycle_soh));            
             %once it reaches below 80, second life becomes higher, 
             %meaning until the value itself     
             
             if (real_soh < 80) %%need reference
                 obj.second_cycle_counter = obj.second_cycle_counter + 1; 
-                f = real_soh - obj.second_cycle_counter/500; %%%%%%%%%%%%
+                f = real_soh - obj.second_cycle_counter/500; 
             else
                 f = real_soh;
             end                    
         end 
         %% Commands with no Return Values        
         function charge(obj, how_much_charge)   
+            %Cooperative customers assuming discount can be taken within 
+            %3 hours                       
+            obj.addtl_hr_for_charge                                     ...
+            = round( my.CHARGING_TIME                                   ...
+             * (charge_type.SOC_FULL_CHARGE - obj.soc_current_charge)   ...
+             / (charge_type.SOC_FULL_CHARGE                             ...
+                - charge_type.SOC_EMPTY_CHARGE) );
+            
+            obj.hour_for_grid_ready                                     ...
+            = mod(obj.hour_day_current + obj.addtl_hr_for_charge, 24);
+            
+            obj.day_for_grid_ready  = obj.abs_day_current               ...
+                            + floor((obj.hour_day_current               ...
+                                 + obj.addtl_hr_for_charge)             ...
+                                /my.HOURS_IN_A_DAY);
+            %priority for HEAVY INTERVAL than LIGHT INTERVAL   
+            interval_for_low_grid_use = mod(obj.light_interval          ...
+                - my.HR_BEFORE_LOW_GRID_USE, 24); 
+            
+            
+            if (ismember(obj.hour_for_grid_ready, obj.heavy_interval)   ...
+                    == true)
+                obj.discount_fee_undrained = my.DISCOUNT_VALUE; 
+                obj.discount_counter = obj.discount_counter + 1; 
+                %other function for grid services HEAVY
+                obj.high_int_counter = obj.high_int_counter + 1;
+            elseif (ismember(obj.hour_day_current,                      ...
+                    interval_for_low_grid_use) == true)
+                obj.discount_fee_undrained = my.DISCOUNT_VALUE; 
+                obj.discount_counter = obj.discount_counter + 1; 
+                %other function for grid services LIGHT
+                obj.low_int_counter = obj.low_int_counter + 1;
+            else 
+                obj.discount_fee_undrained = 0; 
+            end
+            
+            
             if (how_much_charge == charge_type.SOC_FULL_CHARGE) 
                 obj.profit_swap_fee = my.FULL_FEE_SWAP;
             elseif (how_much_charge == charge_type.SOC_PARTIAL_CHARGE) 
@@ -221,7 +273,19 @@ classdef Battery < handle
                 class_type_prop_temp = class_type.CLASS_D;
                 %class_type_prop_temp = 'CLASS_D';
             end
-            obj.class_type_prop = class_type_prop_temp;                        
+            obj.class_type_prop = class_type_prop_temp;  
+            
+            obj.profit_lease_fee                                        ...
+            = obj.customer_used_hours*my.HOUR_RATE_FOR_EV_BATT_USE      ...
+            * (1 - obj.discount_fee_undrained);
+        
+            obj.profit_customer = obj.profit_lease_fee                  ...
+                + obj.profit_swap_fee;
+            obj.total_profit_customer = obj.total_profit_customer +     ...
+                obj.profit_customer;
+            obj.can_discharge = true; 
+            obj.can_recharge = false;
+            
         end
         function discharge(obj, val)
             if (val < 0)
@@ -232,6 +296,83 @@ classdef Battery < handle
                 error('value should be within charging range');
             end
             obj.soc_current_charge = obj.soc_current_charge - val;
+            
+            %Assumption: user will use up battery after 1-3 days but
+            %cluster around 2 days           
+            if (obj.is_double_peak == false) 
+                deviation = (my.MAX_HR_RETURN_BATT                      ...
+                    - my.MIN_HR_RETURN_BATT) / 8;                       ...
+                    % should be transferred to a more constant value 
+                x = round(normrnd(my.AVE_HR_RETURN_BATT, deviation));
+                if (x<my.MIN_HR_RETURN_BATT)
+                    x = my.AVE_HR_RETURN_BATT;
+                end
+                if (x>my.MAX_HR_RETURN_BATT)
+                    x = my.AVE_HR_RETURN_BATT;
+                end
+            else
+               x = round(umgrn([17 31 41 55 65],[4 3 3 4 4],1,          ...
+                   'with_plot', 0));
+            end
+            
+            
+            obj.customer_used_hours = x; 
+            
+            obj.hours_to_charge                                         ...
+            = mod(obj.hour_day_current + obj.customer_used_hours        ...
+               , my.HOURS_IN_A_DAY);
+            
+            if (obj.is_cooperative == true)
+                obj.addtl_hr_for_charge                                 ...
+                = round( my.CHARGING_TIME                               ...
+                 * (charge_type.SOC_FULL_CHARGE                         ...
+                 - obj.soc_current_charge)                              ...
+                 / (charge_type.SOC_FULL_CHARGE                         ...
+                    - charge_type.SOC_EMPTY_CHARGE) );
+
+                fut_hour_for_grid_ready                                 ...
+                = mod(obj.hours_to_charge + obj.addtl_hr_for_charge, 24);
+                
+                
+                
+                
+                diff_interval =[obj.heavy_interval                      ...
+                    obj.heavy_interval+24]                              ...
+                    - double(fut_hour_for_grid_ready);
+                diff_interval(diff_interval < 0) = []; 
+                preferred_high = min(diff_interval);
+
+                %2016-04-20
+                target_low_use = [obj.light_interval                    ...
+                    obj.light_interval+24]                              ...
+                     - my.HR_BEFORE_LOW_GRID_USE                        ...
+                     - double(obj.hours_to_charge);
+                target_low_use(target_low_use<0) = []; 
+                preferred_low = min(target_low_use); 
+                
+                %Note: no double discount                                                
+                obj.preferred_high_f = preferred_high;
+                obj.preferred_low_f = preferred_low;
+                preferred_diff = min(preferred_high, preferred_low);
+                
+                if (preferred_diff <= my.COOPERATIVE_TIME)
+                    obj.customer_used_hours = obj.customer_used_hours   ...
+                        + preferred_diff;
+                    obj.hours_to_charge                                 ...
+                    = mod(obj.hour_day_current + obj.customer_used_hours...
+                       , my.HOURS_IN_A_DAY);
+                end
+            end
+           
+            obj.abs_day_to_charge                                       ...
+            = obj.abs_day_current                                       ...
+            + floor( (obj.hour_day_current + obj.customer_used_hours)   ...
+               / my.HOURS_IN_A_DAY );                                              
+                 
+            obj.can_discharge = false; 
+            obj.can_recharge = true; 
+            
+            
         end        
     end    
 end
