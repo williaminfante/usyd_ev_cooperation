@@ -61,15 +61,25 @@ classdef Battery < handle
         can_recharge            = false;  %move to customer
         is_cooperative          = false;  %move to customer 
         is_double_peak          = false;  %move to customer 
+        
+        is_ready_full_charge    = true; 
+        ready_dispose_flag      = true; 
+        ready_hour_countdown    = 0; 
+        ready_day_countdown     = 0; 
+        
+        
         %Counters
         times_battery_charged   = 0; 
         cumulative_cycles       = 0;
         second_cycle_counter    = 0;   
         discount_counter        = 0;
+        discount_counter_flag   = 0; 
         preferred_low_f         = 0;
         preferred_high_f        = 0;
         high_int_counter        = 0;
+        high_int_counter_flag   = 0;
         low_int_counter         = 0;
+        low_int_counter_flag    = 0;
         tracking_dist           = 0;
         tracking_dist_no_add    = 0;
         
@@ -220,16 +230,25 @@ classdef Battery < handle
                     == true)
                 obj.discount_fee_undrained = my.DISCOUNT_VALUE; 
                 obj.discount_counter = obj.discount_counter + 1; 
+                obj.discount_counter_flag = 1; 
                 %other function for grid services HEAVY
                 obj.high_int_counter = obj.high_int_counter + 1;
+                obj.high_int_counter_flag = 1; 
+                obj.low_int_counter_flag = 0; 
             elseif (ismember(obj.hour_day_current,                      ...
                     interval_for_low_grid_use) == true)
                 obj.discount_fee_undrained = my.DISCOUNT_VALUE; 
                 obj.discount_counter = obj.discount_counter + 1; 
+                obj.discount_counter_flag = 1; 
                 %other function for grid services LIGHT
                 obj.low_int_counter = obj.low_int_counter + 1;
+                obj.high_int_counter_flag = 0; 
+                obj.low_int_counter_flag = 1;                 
             else 
                 obj.discount_fee_undrained = 0; 
+                obj.discount_counter_flag = 0; 
+                obj.high_int_counter_flag = 0; 
+                obj.low_int_counter_flag = 0;                  
             end
             
             

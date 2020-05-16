@@ -1,0 +1,9 @@
+bar(y)
+xTick = 1:4;
+set(gca,'xtick',xTick)
+yTick = get(gca,'ytick');
+set(gca,'xticklabel',[])
+xTickLabel = {{'Cooperative';'Norm Dist'},{'Indifferent';'Norm Dist'}, {'Cooperative';'Clustered Dist'},{'Indifferent';'Clustered Dist'}};
+for k = 1:length(xTick)
+    text(xTick(k),yTick(1)-0.05*(yTick(end)-yTick(1)),xTickLabel{k},'HorizontalAlignment','center')
+end
