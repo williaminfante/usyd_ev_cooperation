@@ -10,6 +10,7 @@
 %william         2016-04-21  1.1   Placed Battery-related commands 
 %                                  to Battery.m
 %                                  Rename to battery_arch.m
+%                2016-04-28  1.2   Added FileName in struct for Excel
 %======================================================================
 
 % %Clear Values 
@@ -116,19 +117,7 @@ table_mx            = struct2table(s_mx);
 cell_mx             = table2cell(table_mx); 
 cell_mx_with_header = [table_mx.Properties.VariableNames;  cell_mx];
 
-f_mx.is_double_peak                 = b.is_double_peak;
-f_mx.is_cooperative                 = b.is_cooperative;
-f_mx.myseed                         = myseed;
-f_mx.times_battery_charged          = b.times_battery_charged;
-f_mx.discount_counter               = b.discount_counter;
-f_mx.low_int_counter                = b.low_int_counter; 
-f_mx.high_int_counter               = b.high_int_counter;  
-f_mx.total_profit_customer          = b.total_profit_customer;
-f_mx.total_electricity_cost         = b.total_electricity_cost; 
-f_mx.soh                            = b.soh;
-table_f_mx            = struct2table(f_mx); 
-cell_f_mx             = table2cell(table_f_mx); 
-cell_f_mx_with_header = [table_f_mx.Properties.VariableNames;  cell_f_mx];
+
 
 if(b.is_double_peak == false) 
     peak_name = 'norm';
@@ -146,7 +135,24 @@ FileName=sprintf('%s_batt_pk_%s_ld_%s_%s_sd_%d.xlsx',            ...
         datestr(now, 'yymmdd_HHMM'), peak_name, load, ...
         customer_name, myseed);
 
+f_mx.filename                       = Filename;
+f_mx.is_double_peak                 = b.is_double_peak;
+f_mx.is_cooperative                 = b.is_cooperative;
+f_mx.myseed                         = myseed;
+f_mx.times_battery_charged          = b.times_battery_charged;
+f_mx.discount_counter               = b.discount_counter;
+f_mx.low_int_counter                = b.low_int_counter; 
+f_mx.high_int_counter               = b.high_int_counter;  
+f_mx.total_profit_customer          = b.total_profit_customer;
+f_mx.total_electricity_cost         = b.total_electricity_cost; 
+f_mx.soh                            = b.soh;
 
+table_f_mx            = struct2table(f_mx); 
+cell_f_mx             = table2cell(table_f_mx); 
+cell_f_mx_with_header = [table_f_mx.Properties.VariableNames;  cell_f_mx];    
+    
+    
+    
 sheetnames = {'data_per_time', 'final_state'}; 
 xlsheets(sheetnames, FileName);
 xlswrite(FileName, cell_mx_with_header, 'data_per_time');

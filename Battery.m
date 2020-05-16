@@ -13,6 +13,8 @@
 %                                   random sampling
 %                                  Moved the value of LIGHT_INTERVAL
 %                                   and HEAVY_INTERVAL
+%william         2016-04-22   1.2  Updated the EV Customer Visit 
+%                                   to station formula x
 %======================================================================
 
 classdef Battery < handle
